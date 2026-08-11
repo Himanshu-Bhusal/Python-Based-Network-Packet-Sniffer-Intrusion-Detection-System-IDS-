@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network IDS Dashboard</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f172a; color: #f8fafc; margin: 0; padding: 20px; }
+        h1 { color: #38bdf8; text-align: center; }
+        .stats-container { display: flex; gap: 20px; justify-content: center; margin-bottom: 20px; }
+        .card { background: #1e293b; padding: 20px; border-radius: 8px; width: 200px; text-align: center; border: 1px solid #334155; }
+        .card h2 { margin: 0; font-size: 2em; color: #f43f5e; }
+        table { width: 100%; border-collapse: collapse; background: #1e293b; border-radius: 8px; overflow: hidden; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #334155; }
+        th { background-color: #334155; color: #38bdf8; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8em; }
+        .CRITICAL { background-color: #991b1b; color: #fecaca; }
+        .HIGH { background-color: #c2410c; color: #ffedd5; }
+        .MEDIUM { background-color: #854d0e; color: #fef08a; }
+    </style>
+</head>
+<body>
+    <h1>🛡️ Network Intrusion Detection Dashboard</h1>
+    
+    <div class="stats-container">
+        <div class="card">
+            <h2 id="total-alerts">0</h2>
+            <p>Total Alerts</p>
+        </div>
+        <div class="card">
+            <h2 id="critical-alerts">0</h2>
+            <p>Critical Threats</p>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>Severity</th>
+                <th>Alert Type</th>
+                <th>Source IP</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody id="alert-table-body">
+            <tr><td colspan="5" style="text-align:center;">Waiting for alerts...</td></tr>
+        </tbody>
+    </table>
+
+    <script>
+        async function fetchAlerts() {
+            try {
+                const response = await fetch('/api/alerts');
+                const alerts = await response.json();
+                
+                console.log("Fetched alerts from server:", alerts);
+
+                const tableBody = document.getElementById('alert-table-body');
+                const totalAlertsElem = document.getElementById('total-alerts');
+                const criticalAlertsElem = document.getElementById('critical-alerts');
+
+                totalAlertsElem.innerText = alerts.length;
+                criticalAlertsElem.innerText = alerts.filter(a => a.severity === 'CRITICAL' || a.severity === 'HIGH').length;
+
+                if (!alerts || alerts.length === 0) return;
+
+                const rowsHtml = alerts.slice().reverse().map(alert => `
+                    <tr>
+                        <td>${alert.timestamp}</td>
+                        <td><span class="badge ${alert.severity}">${alert.severity}</span></td>
+                        <td>${alert.type}</td>
+                        <td>${alert.source}</td>
+                        <td>${alert.description}</td>
+                    </tr>
+                `).join('');
+
+                tableBody.innerHTML = rowsHtml;
+            } catch (err) {
+                console.error("Error fetching alerts:", err);
+            }
+        }
+
+        // Fetch immediately on load, then poll every 2 seconds
+        fetchAlerts();
+        setInterval(fetchAlerts, 2000);
+    </script>
+</body>
+</html>
